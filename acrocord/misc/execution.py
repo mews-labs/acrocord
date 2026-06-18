@@ -19,7 +19,12 @@ import warnings
 from contextlib import contextmanager
 from functools import wraps
 
-from memory_profiler import memory_usage
+
+try:
+    from memory_profiler import memory_usage
+    HAS_MEMORY_PROFILER = True
+except ImportError:
+    HAS_MEMORY_PROFILER = False
 
 
 class ColorsOut:
@@ -53,24 +58,45 @@ def print_(output, color="DEFAULT"):
 def execution_time(method):
     @wraps(method)
     def timed(*args, **kw):
-        if sys.platform =="win32":
-            return method(*args, **kw)
-        starting_time = time.time()
-        mem, result = memory_usage((method, args, kw), retval=True, timeout=200,
-                                   interval=1e-7)
-        stopping_time = time.time()
+        # fallback path (no profiling available)
+        if sys.platform == "win32" or not HAS_MEMORY_PROFILER:
+            start = time.time()
+            result = method(*args, **kw)
+            end = time.time()
 
-        msg = "[" + method.__name__ + "] execution time :"
-        msg += "-" * (40 - len(msg)) + "  "
-        msg += str(datetime.timedelta(milliseconds=(stopping_time - starting_time) * 1000))
-        msg += "  " + f'Memory {int(max(mem) - min(mem))}' + " MiB"
-        if len(args) > 0 and hasattr(args[0], "active_execution_time"):
-            if not args[0].active_execution_time:
-                return result
+            msg = f"[{method.__name__}] execution time : "
+            msg += str(datetime.timedelta(milliseconds=(end - start) * 1000))
+
+            if len(args) > 0 and hasattr(args[0], "active_execution_time"):
+                if args[0].active_execution_time:
+                    print_(msg, color="TIME")
             else:
+                print_(msg, color="TIME")
+
+            return result
+
+        # profiling path (memory_profiler available)
+        start = time.time()
+
+        mem, result = memory_usage(
+            (method, args, kw),
+            retval=True,
+            timeout=200,
+            interval=1e-7
+        )
+
+        end = time.time()
+
+        msg = f"[{method.__name__}] execution time : "
+        msg += str(datetime.timedelta(milliseconds=(end - start) * 1000))
+        msg += f"  Memory {int(max(mem) - min(mem))} MiB"
+
+        if len(args) > 0 and hasattr(args[0], "active_execution_time"):
+            if args[0].active_execution_time:
                 print_(msg, color="TIME")
         else:
             print_(msg, color="TIME")
+
         return result
 
     return timed

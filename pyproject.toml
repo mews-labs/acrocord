@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "acrocord"
 version = "2023.3.4"
-urls = {repository = "https://github.com/eurobios-scb/acrocord"}
+urls = {repository = "https://github.com/mews-labs/acrocord"}
 description = "Python API for PostreSQL database"
 authors = [{ name = "Eurobios", email = "contact_ost@eurobios.com" }]
 license = { file = "LICENSE" }
@@ -15,7 +15,7 @@ classifiers = [
               "Programming Language :: Python :: 3",
 ]
 keywords = ["data", "database", "postgresql"]
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 readme = "README.md"
 
 dynamic = ["dependencies"]
@@ -28,4 +28,9 @@ addopts = "-ra -q"
 testpaths = [
             "test/",
 
+]
+
+[project.optional-dependencies]
+profile = [
+    "memory-profiler"
 ]
